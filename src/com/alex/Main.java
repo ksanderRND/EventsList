@@ -10,36 +10,33 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
         String tags=getTags();
-        StringBuilder text = getInfoFromJson(tags);
-        saveToCSV(text);
+        getInfoFromJson(tags);
+
         //System.out.println("\n***DONE!");
 
     }
 
     private static String getTags() throws IOException {
-        System.out.println("\n***please list the tags you are interested in(divided by the comma without spaces):\n");
+        System.out.println("\n***please list the tags you are interested in(divided by the comma without spaces):");
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
         String str = reader.readLine();
         return str;
     }
 
-    private static StringBuilder getInfoFromJson(String tags) {
+    private static void getInfoFromJson(String tags) {
         String uri = "https://open-api.myhelsinki.fi/v1/events/";//music";
         if(!tags.isEmpty())
         {
             uri+="?tags_filter="+tags;
-            //System.out.println(uri);
-
         }
 
-        GetDataAPI c = new GetDataAPI();
-        String jsonString = c.getHTML(uri);
+        GetDataAPI api = new GetDataAPI();
+        String jsonString = api.getHTML(uri);
         JSONObject obj = new JSONObject(jsonString);
-        //String n = obj.getString("id");
         JSONArray data = obj.getJSONArray("data");
         int size = data.length();
+        int page = 1;
         StringBuilder text = new StringBuilder();
-        //StringBuilder address = new StringBuilder();
         for (int i = 0; i < size; i++) {
 
             //for names
@@ -70,21 +67,30 @@ public class Main {
                 }
             }
             text.append('\n');
+            if (i>=1000*page)
+            {
+                saveToCSV(text, page);
+                text.setLength(0);
+                page++;
+            }
         }
-        System.out.print("size= ");
+
+        saveToCSV(text, page);
+        System.out.print("Number of events = ");
         System.out.println(size);
-        return text;
     }
 
-    private static void saveToCSV(StringBuilder  text)
+    private static void saveToCSV(StringBuilder  text, int page)
     {
+
         PrintWriter pw = null;
+        String fileName = "events_list_"+page+".csv";
+        System.out.println(fileName);
         try {
-            pw = new PrintWriter(new File("NewData.csv"));
+            pw = new PrintWriter(new File(fileName));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-
         pw.write(text.toString());
         pw.close();
     }
